@@ -6,26 +6,30 @@ import { addTodo, deleteTodo, Todo, toggleTodo, updateTodo, setFilter } from '..
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TodoApp = () => {
-    const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
   const todos = useSelector((state: RootState) => state.todos.items);
   const currentFilter = useSelector((state: RootState) => state.todos.setFilter);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const isEditing = useMemo(() => editingId !== null, [editingId]);
+  // simple boolean
+  const isEditing = editingId !== null;
 
-  const filteredTodos = useMemo(() => {
-    switch (currentFilter) {
-      case 'completed':
-        return todos.filter(todo => todo.completed);
-      case 'incomplete':
-        return todos.filter(todo => !todo.completed);
-      case 'all':
-      default:
-        return todos;
-    }
-  }, [todos, currentFilter]);
+  // simple filtering logic
+  let filteredTodos = todos;
+
+  switch (currentFilter) {
+    case 'completed':
+      filteredTodos = todos.filter(todo => todo.completed);
+      break;
+    case 'incomplete':
+      filteredTodos = todos.filter(todo => !todo.completed);
+      break;
+    case 'all':
+    default:
+      filteredTodos = todos;
+  }
 
   const onSave = () => {
     const trimmedTitle = title.trim();
