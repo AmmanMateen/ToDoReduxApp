@@ -2,17 +2,30 @@ import { FlatList, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSh
 import React, { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store/store';
-import { addTodo, deleteTodo, Todo, toggleTodo, updateTodo } from '../redux/slice/todosSlice';
+import { addTodo, deleteTodo, Todo, toggleTodo, updateTodo, setFilter } from '../redux/slice/todosSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TodoApp = () => {
     const dispatch = useDispatch<AppDispatch>();
   const todos = useSelector((state: RootState) => state.todos.items);
+  const currentFilter = useSelector((state: RootState) => state.todos.setFilter);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const isEditing = useMemo(() => editingId !== null, [editingId]);
+
+  const filteredTodos = useMemo(() => {
+    switch (currentFilter) {
+      case 'completed':
+        return todos.filter(todo => todo.completed);
+      case 'incomplete':
+        return todos.filter(todo => !todo.completed);
+      case 'all':
+      default:
+        return todos;
+    }
+  }, [todos, currentFilter]);
 
   const onSave = () => {
     const trimmedTitle = title.trim();
@@ -90,8 +103,53 @@ const TodoApp = () => {
           </View>
         </View>
 
+        <View style={styles.filterContainer}>
+          <Pressable
+            style={[
+              styles.filterButton,
+              currentFilter === 'all' && styles.filterButtonActive,
+            ]}
+            onPress={() => dispatch(setFilter('all'))}>
+            <Text
+              style={[
+                styles.filterText,
+                currentFilter === 'all' && styles.filterTextActive,
+              ]}>
+              All
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.filterButton,
+              currentFilter === 'incomplete' && styles.filterButtonActive,
+            ]}
+            onPress={() => dispatch(setFilter('incomplete'))}>
+            <Text
+              style={[
+                styles.filterText,
+                currentFilter === 'incomplete' && styles.filterTextActive,
+              ]}>
+              Incomplete
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.filterButton,
+              currentFilter === 'completed' && styles.filterButtonActive,
+            ]}
+            onPress={() => dispatch(setFilter('completed'))}>
+            <Text
+              style={[
+                styles.filterText,
+                currentFilter === 'completed' && styles.filterTextActive,
+              ]}>
+              Completed
+            </Text>
+          </Pressable>
+        </View>
+
         <FlatList
-          data={todos}
+          data={filteredTodos}
           keyExtractor={item => item.id}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No todos yet. Add one above.</Text>
@@ -212,6 +270,28 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 24,
     flexGrow: 1,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  filterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#e5e7eb',
+  },
+  filterButtonActive: {
+    backgroundColor: '#2563eb',
+  },
+  filterText: {
+    color: '#6b7280',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  filterTextActive: {
+    color: '#ffffff',
   },
   emptyText: {
     color: '#6b7280',

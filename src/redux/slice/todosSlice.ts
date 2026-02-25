@@ -9,10 +9,12 @@ export type Todo = {
 
 type TodosState = {
   items: Todo[];
+  setFilter: 'all' | 'completed' | 'incomplete';
 };
 
 const initialState: TodosState = {
   items: [],
+  setFilter: 'all',
 };
 
 type AddTodoPayload = {
@@ -60,8 +62,11 @@ const todosSlice = createSlice({
     deleteTodo: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter(todo => todo.id !== action.payload);
     },
+    setFilter: (state, action: PayloadAction<'all' | 'completed' | 'incomplete'>) => {
+      state.setFilter = action.payload;
+    }
   },
 });
 
-export const { addTodo, updateTodo, toggleTodo, deleteTodo } = todosSlice.actions;
+export const { addTodo, updateTodo, toggleTodo, deleteTodo , setFilter } = todosSlice.actions;
 export default todosSlice.reducer;
