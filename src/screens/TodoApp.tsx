@@ -12,7 +12,7 @@ const TodoApp = () => {
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const isEditing = useMemo(() => editingId !== null, [editingId]);
+  const isEditing = editingId !== null;
 
   const onSave = () => {
     const trimmedTitle = title.trim();
