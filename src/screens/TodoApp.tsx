@@ -1,0 +1,268 @@
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native'
+import React, { useMemo, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../redux/store/store';
+import { addTodo, deleteTodo, Todo, toggleTodo, updateTodo } from '../redux/slice/todosSlice';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const TodoApp = () => {
+    const dispatch = useDispatch<AppDispatch>();
+  const todos = useSelector((state: RootState) => state.todos.items);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const isEditing = useMemo(() => editingId !== null, [editingId]);
+
+  const onSave = () => {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      return;
+    }
+
+    if (isEditing && editingId) {
+      dispatch(
+        updateTodo({
+          id: editingId,
+          title: trimmedTitle,
+          description,
+        }),
+      );
+    } else {
+      dispatch(
+        addTodo({
+          title: trimmedTitle,
+          description,
+        }),
+      );
+    }
+
+    setTitle('');
+    setDescription('');
+    setEditingId(null);
+  };
+
+  const startEdit = (todo: Todo) => {
+    setEditingId(todo.id);
+    setTitle(todo.title);
+    setDescription(todo.description);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setTitle('');
+    setDescription('');
+  };
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" />
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Text style={styles.heading}>Todo Application</Text>
+        <View style={styles.formCard}>
+          <TextInput
+            placeholder="Title"
+            placeholderTextColor="#6b7280"
+            value={title}
+            onChangeText={setTitle}
+            style={styles.input}
+          />
+          <TextInput
+            placeholder="Description"
+            placeholderTextColor="#6b7280"
+            value={description}
+            onChangeText={setDescription}
+            style={[styles.input, styles.descriptionInput]}
+            multiline
+          />
+          <View style={styles.actionsRow}>
+            <Pressable style={styles.primaryButton} onPress={onSave}>
+              <Text style={styles.primaryButtonText}>
+                {isEditing ? 'Update Todo' : 'Add Todo'}
+              </Text>
+            </Pressable>
+            {isEditing ? (
+              <Pressable style={styles.secondaryButton} onPress={cancelEdit}>
+                <Text style={styles.secondaryButtonText}>Cancel</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        </View>
+
+        <FlatList
+          data={todos}
+          keyExtractor={item => item.id}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No todos yet. Add one above.</Text>
+          }
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <View style={styles.todoCard}>
+              <View style={styles.todoInfo}>
+                <Text
+                  style={[
+                    styles.todoTitle,
+                    item.completed ? styles.completedText : null,
+                  ]}>
+                  {item.title}
+                </Text>
+                {item.description ? (
+                  <Text
+                    style={[
+                      styles.todoDescription,
+                      item.completed ? styles.completedText : null,
+                    ]}>
+                    {item.description}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={styles.todoActions}>
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={() => dispatch(toggleTodo(item.id))}>
+                  <Text style={styles.actionText}>
+                    {item.completed ? 'Undo' : 'Done'}
+                  </Text>
+                </Pressable>
+                <Pressable style={styles.actionButton} onPress={() => startEdit(item)}>
+                  <Text style={styles.actionText}>Edit</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.actionButton, styles.deleteButton]}
+                  onPress={() => {
+                    if (editingId === item.id) {
+                      cancelEdit();
+                    }
+                    dispatch(deleteTodo(item.id));
+                  }}>
+                  <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+export default TodoApp
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  heading: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  formCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: '#111827',
+    marginBottom: 10,
+  },
+  descriptionInput: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  primaryButton: {
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    backgroundColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  secondaryButtonText: {
+    color: '#111827',
+    fontWeight: '600',
+  },
+  listContent: {
+    paddingBottom: 24,
+    flexGrow: 1,
+  },
+  emptyText: {
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  todoCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  todoInfo: {
+    flex: 1,
+  },
+  todoTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  todoDescription: {
+    fontSize: 14,
+    color: '#374151',
+    marginTop: 4,
+  },
+  completedText: {
+    textDecorationLine: 'line-through',
+    color: '#6b7280',
+  },
+  todoActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  actionText: {
+    color: '#1d4ed8',
+    fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#fef2f2',
+  },
+  deleteText: {
+    color: '#b91c1c',
+  },
+});
