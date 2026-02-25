@@ -10,11 +10,13 @@ export type Todo = {
 type TodosState = {
   items: Todo[];
   setFilter: 'all' | 'completed' | 'incomplete';
+  searchTerm: string;
 };
 
 const initialState: TodosState = {
   items: [],
   setFilter: 'all',
+  searchTerm: '',
 };
 
 type AddTodoPayload = {
@@ -64,9 +66,12 @@ const todosSlice = createSlice({
     },
     setFilter: (state, action: PayloadAction<'all' | 'completed' | 'incomplete'>) => {
       state.setFilter = action.payload;
-    }
+    },
+    setSearchTerm: (state, action: PayloadAction<string>) => {
+      state.searchTerm = action.payload;
+    },
   },
 });
 
-export const { addTodo, updateTodo, toggleTodo, deleteTodo , setFilter } = todosSlice.actions;
+export const { addTodo, updateTodo, toggleTodo, deleteTodo , setFilter, setSearchTerm } = todosSlice.actions;
 export default todosSlice.reducer;

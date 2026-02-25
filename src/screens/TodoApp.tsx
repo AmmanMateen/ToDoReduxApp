@@ -2,13 +2,14 @@ import { FlatList, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSh
 import React, { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store/store';
-import { addTodo, deleteTodo, Todo, toggleTodo, updateTodo, setFilter } from '../redux/slice/todosSlice';
+import { addTodo, deleteTodo, Todo, toggleTodo, updateTodo, setFilter, setSearchTerm } from '../redux/slice/todosSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TodoApp = () => {
     const dispatch = useDispatch<AppDispatch>();
   const todos = useSelector((state: RootState) => state.todos.items);
   const currentFilter = useSelector((state: RootState) => state.todos.setFilter);
+  const searchTerm = useSelector((state: RootState) => state.todos.searchTerm);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -16,16 +17,31 @@ const TodoApp = () => {
   const isEditing = useMemo(() => editingId !== null, [editingId]);
 
   const filteredTodos = useMemo(() => {
+    let filtered = todos;
+    
+    // Apply filter
     switch (currentFilter) {
       case 'completed':
-        return todos.filter(todo => todo.completed);
+        filtered = filtered.filter(todo => todo.completed);
+        break;
       case 'incomplete':
-        return todos.filter(todo => !todo.completed);
+        filtered = filtered.filter(todo => !todo.completed);
+        break;
       case 'all':
       default:
-        return todos;
+        break;
     }
-  }, [todos, currentFilter]);
+
+    // Apply search
+    if (searchTerm && searchTerm.trim()) {
+      filtered = filtered.filter(todo =>
+        todo.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        todo.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return filtered;
+  }, [todos, currentFilter, searchTerm]);
 
   const onSave = () => {
     const trimmedTitle = title.trim();
@@ -74,6 +90,13 @@ const TodoApp = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Text style={styles.heading}>Todo Application</Text>
         <View style={styles.formCard}>
+          <TextInput
+            placeholder="Search todos..."
+            placeholderTextColor="#6b7280"
+            value={searchTerm}
+            onChangeText={(text) => dispatch(setSearchTerm(text))}
+            style={styles.input}
+          />
           <TextInput
             placeholder="Title"
             placeholderTextColor="#6b7280"
