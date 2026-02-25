@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, nanoid, PayloadAction } from '@reduxjs/toolkit';
 
 export type Todo = {
   id: string;
@@ -33,7 +33,7 @@ const todosSlice = createSlice({
     addTodo: (state, action: PayloadAction<AddTodoPayload>) => {
       const { title, description } = action.payload;
       state.items.unshift({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        id: nanoid(),
         title: title.trim(),
         description: description.trim(),
         completed: false,
