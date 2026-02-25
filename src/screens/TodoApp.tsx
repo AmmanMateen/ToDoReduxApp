@@ -6,7 +6,7 @@ import { addTodo, deleteTodo, Todo, toggleTodo, updateTodo, setFilter, setSearch
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TodoApp = () => {
-    const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
   const todos = useSelector((state: RootState) => state.todos.items);
   const currentFilter = useSelector((state: RootState) => state.todos.setFilter);
   const searchTerm = useSelector((state: RootState) => state.todos.searchTerm);
@@ -16,39 +16,37 @@ const TodoApp = () => {
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const isEditing = useMemo(() => editingId !== null, [editingId]);
+  const isEditing = editingId !== null;
 
   // Fetch todos on component mount
   useEffect(() => {
     dispatch(fetchTodos());
   }, [dispatch]);
 
-  const filteredTodos = useMemo(() => {
-    let filtered = todos;
-    
-    // Apply filter
-    switch (currentFilter) {
-      case 'completed':
-        filtered = filtered.filter(todo => todo.completed);
-        break;
-      case 'incomplete':
-        filtered = filtered.filter(todo => !todo.completed);
-        break;
-      case 'all':
-      default:
-        break;
-    }
+  let filteredTodos = todos;
 
-    // Apply search
-    if (searchTerm && searchTerm.trim()) {
-      filtered = filtered.filter(todo =>
-        todo.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        todo.description.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+  // Apply filter
+  switch (currentFilter) {
+    case 'completed':
+      filteredTodos = filteredTodos.filter(todo => todo.completed);
+      break;
+    case 'incomplete':
+      filteredTodos = filteredTodos.filter(todo => !todo.completed);
+      break;
+    case 'all':
+    default:
+      break;
+  }
 
-    return filtered;
-  }, [todos, currentFilter, searchTerm]);
+  // Apply search
+  if (searchTerm && searchTerm.trim()) {
+    const lowerSearch = searchTerm.toLowerCase();
+
+    filteredTodos = filteredTodos.filter(todo =>
+      todo.title.toLowerCase().includes(lowerSearch) ||
+      todo.description.toLowerCase().includes(lowerSearch)
+    );
+  }
 
   const onSave = () => {
     const trimmedTitle = title.trim();
@@ -124,8 +122,8 @@ const TodoApp = () => {
             multiline
           />
           <View style={styles.actionsRow}>
-            <Pressable 
-              style={[styles.primaryButton, loading && styles.disabledButton]} 
+            <Pressable
+              style={[styles.primaryButton, loading && styles.disabledButton]}
               onPress={onSave}
               disabled={loading}>
               {loading ? (
