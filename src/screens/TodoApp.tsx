@@ -1,8 +1,8 @@
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native'
-import React, { useMemo, useState } from 'react'
+import { FlatList, KeyboardAvoidingView, Platform, Pressable, StatusBar, StyleSheet, Text, TextInput, View, ActivityIndicator } from 'react-native'
+import React, { useMemo, useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../redux/store/store';
-import { addTodo, deleteTodo, Todo, toggleTodo, updateTodo, setFilter, setSearchTerm } from '../redux/slice/todosSlice';
+import { addTodo, deleteTodo, Todo, toggleTodo, updateTodo, setFilter, setSearchTerm, fetchTodos, createTodo, updateTodoAsync, deleteTodoAsync } from '../redux/slice/todosSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TodoApp = () => {
@@ -10,11 +10,18 @@ const TodoApp = () => {
   const todos = useSelector((state: RootState) => state.todos.items);
   const currentFilter = useSelector((state: RootState) => state.todos.setFilter);
   const searchTerm = useSelector((state: RootState) => state.todos.searchTerm);
+  const loading = useSelector((state: RootState) => state.todos.loading);
+  const error = useSelector((state: RootState) => state.todos.error);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const isEditing = useMemo(() => editingId !== null, [editingId]);
+
+  // Fetch todos on component mount
+  useEffect(() => {
+    dispatch(fetchTodos());
+  }, [dispatch]);
 
   const filteredTodos = useMemo(() => {
     let filtered = todos;
@@ -50,16 +57,20 @@ const TodoApp = () => {
     }
 
     if (isEditing && editingId) {
-      dispatch(
-        updateTodo({
-          id: editingId,
-          title: trimmedTitle,
-          description,
-        }),
-      );
+      const targetTodo = todos.find(t => t.id === editingId);
+      if (targetTodo) {
+        dispatch(
+          updateTodoAsync({
+            id: editingId,
+            title: trimmedTitle,
+            description,
+            completed: targetTodo.completed,
+          }),
+        );
+      }
     } else {
       dispatch(
-        addTodo({
+        createTodo({
           title: trimmedTitle,
           description,
         }),
@@ -113,10 +124,17 @@ const TodoApp = () => {
             multiline
           />
           <View style={styles.actionsRow}>
-            <Pressable style={styles.primaryButton} onPress={onSave}>
-              <Text style={styles.primaryButtonText}>
-                {isEditing ? 'Update Todo' : 'Add Todo'}
-              </Text>
+            <Pressable 
+              style={[styles.primaryButton, loading && styles.disabledButton]} 
+              onPress={onSave}
+              disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.primaryButtonText}>
+                  {isEditing ? 'Update Todo' : 'Add Todo'}
+                </Text>
+              )}
             </Pressable>
             {isEditing ? (
               <Pressable style={styles.secondaryButton} onPress={cancelEdit}>
@@ -124,6 +142,10 @@ const TodoApp = () => {
               </Pressable>
             ) : null}
           </View>
+
+          {error && (
+            <Text style={styles.errorText}>❌ {error}</Text>
+          )}
         </View>
 
         <View style={styles.filterContainer}>
@@ -175,7 +197,14 @@ const TodoApp = () => {
           data={filteredTodos}
           keyExtractor={item => item.id}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No todos yet. Add one above.</Text>
+            loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#2563eb" />
+                <Text style={styles.loadingText}>Loading todos...</Text>
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>No todos yet. Add one above.</Text>
+            )
           }
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
@@ -215,7 +244,7 @@ const TodoApp = () => {
                     if (editingId === item.id) {
                       cancelEdit();
                     }
-                    dispatch(deleteTodo(item.id));
+                    dispatch(deleteTodoAsync(item.id));
                   }}>
                   <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
                 </Pressable>
@@ -276,6 +305,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
+  disabledButton: {
+    opacity: 0.6,
+  },
   primaryButtonText: {
     color: '#ffffff',
     fontWeight: '600',
@@ -320,6 +352,23 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     marginTop: 24,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 40,
+  },
+  loadingText: {
+    color: '#6b7280',
+    marginTop: 12,
+    fontSize: 14,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 13,
+    marginTop: 8,
+    paddingHorizontal: 8,
   },
   todoCard: {
     backgroundColor: '#ffffff',
